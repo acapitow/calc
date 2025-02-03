@@ -1,0 +1,15 @@
+module:org.calcmvc
+org.calcmvc.calcop
+org.calcmvc.calcop.calclong
+org.calcmvc.common.misc
+org.calcmvc.common.operation
+org.calcmvc.controller
+org.calcmvc.controller.extracontroller
+org.calcmvc.controller.longcontroller
+org.calcmvc.main
+org.calcmvc.model
+org.calcmvc.model.extramodel
+org.calcmvc.model.longmodel
+org.calcmvc.view
+org.calcmvc.view.extraview
+org.calcmvc.view.longview

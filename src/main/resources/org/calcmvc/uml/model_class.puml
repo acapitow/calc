@@ -1,0 +1,474 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+interface Comparable<T> {
+  + compareTo(T): int
+}
+
+package common {
+
+  package misc {
+    interface MyCommand {
+      + execute(): void
+    }
+
+    abstract MyConcreteObservable {
+      - propertyChangeSupport: PropertyChangeSupport
+      --
+      + MyConcreteObservable()
+      --
+      <<override>>
+      + addPropertyChangeListener(PropertyChangeListener): void
+      + getPropertyChangeSupport() : PropertyChangeSupport
+      <<override>>
+      + removePropertyChangeListener(PropertyChangeListener): void
+    }
+    MyConcreteObservable ..|> MyObservable
+
+    interface MyObservable {
+          + addPropertyChangeListener(PropertyChangeListener): void
+          + removePropertyChangeListener(PropertyChangeListener): void
+    }
+
+    class PackageIntrospection {
+      - LOGGER: Logger
+      - {static} instance: PackageIntrospection
+      --
+      + getClassesInPackage(packageName); Class[]
+      + {static} getInstance(): PackageIntrospection
+      --
+      - PackageIntrospection()
+    }
+  }
+
+  package operation {
+      abstract class CalcCommonBase {
+        # {static} DESCRIPTION: string
+        # OP_COMMON_BASE: CommonBase[]
+        --
+        + CalcCommonBase(string)
+        --
+        + getDescription(): string
+        + getCommonBase(OperationType): CommonBase
+        + getCommonBases(): CommonBase[]
+        # {abstract}createOpElements(Package, OperandType, CommonBase): void
+        # createOpElements(Package, OperandType, CommonBase): void
+      }
+      CalcCommonBase *-- "0..*" CommonBase
+      CalcCommonBase ..|> MyCommand
+
+    abstract class CommonBase {
+      # DESCRIPTION: string
+      # opType: OperationType
+      # operandType: OperandType
+      --
+      + CommonBase(description: string, OperationType, OperandType)
+      --
+      + <<override>> compareTo(CommonBase): int
+      + <<override>> execute(): void
+      + getDescription(): string
+      + getOperandType(): OperandType
+      + getOperationType(): OperationType
+    }
+    CommonBase o-- "1 #OP_TYPE" OperationType
+    CommonBase o-- "1 # OPERAND_TYPE" OperandType
+    CommonBase ..|> MyCommand
+    CommonBase ..|> Comparable
+    CommonBase --|> MyConcreteObservable
+
+    annotation OperandAnnotation {
+      - default = OperandType.UNKNOWN
+      --
+      + OperandType operandType()
+    }
+
+    enum OperandType {
+          EXTRA
+          LONG
+          UNKNOWN
+    }
+
+    class OperationCommon {
+      - instance: OperationCommon
+      --
+      - OperationCommon()
+      --
+      + {static} getInstance(): OperationCommon
+      + createClassesWithOperandType(Package, OperandType): Object[]
+    }
+    OperationCommon -- OperandType
+    OperationCommon -- OperationType
+
+    enum OperationType {
+      - SHORTCUT: string
+      --
+      - OperationType(shortcut: string)
+      --
+      + getShortcut(): string
+      --
+      ADD ("+")
+      DIV ("/")
+      MUL ("*")
+      SQU ("sq")
+      SUB ("-")
+      QUIT ("q")
+      UNKNOWN ("?")
+    }
+
+    class OperationTypeException {
+        + {static} SERIAL_VERSION_UID: long
+        --
+        + OperationTypeException(String)
+    }
+    OperationTypeException --|> RuntimeException
+  }
+}
+
+
+package model {
+    abstract class CalcModel<T> {
+      --
+      + CalcModel(string)
+      --
+      + <<override>> createOpElements(Package, OperandType): void
+      + <<override>> execute(): void
+    }
+    CalcModel *-- "0..*" Model
+    CalcModel --|> CalcCommonBase
+
+    abstract class Model<T> {
+      # operands: T[]
+      # result: T[]
+      --
+      + Model(string, OperationType, OperandType)
+      --
+      + {abstract} convertOperandsToType(string[]): boolean
+      + convertResultToString(): String
+      + execute(): void
+      # {abstract} apply(T[]): void
+    }
+    Model --|> CommonBase
+
+    abstract class BinaryModel<T> {
+      + BinaryModel(string, OperationType, OperandType)
+      --
+      + apply(T[]): T[]
+      # applyBinary(T, T): T
+    }
+    BinaryModel --|> Model
+
+    abstract class UnaryModel<T> {
+          + UnaryModel(string, OperationType, OperandType)
+          --
+          + apply(T[]): T[]
+          # applyUnary(T): T
+    }
+    UnaryModel --|> Model
+
+  package longmodel {
+    class AddLongModel {
+      + {static} DESCRIPTION: string
+      --
+      + AddLongModel()
+      --
+      + <<override>> applyBinary(Long, Long): Long
+    }
+    AddLongModel --|> BinaryLongModel
+    AddLongModel -- OperandAnnotation
+
+    class CalcLongModel<Long> {
+      - {static} DESCRIPTION: string
+      --
+      + CalcLongModel()
+    }
+    CalcLongModel --|> CalcModel
+
+    class DivLongModel {
+      + {static} DESCRIPTION: string
+      --
+      + DivLongModel(DESCRIPTION, OperationType)
+      --
+      + <<override>> applyBinary(Long, Long): Long
+    }
+    DivLongModel --|> BinaryLongModel
+    DivLongModel -- OperandAnnotation
+
+    class SquareLongModel {
+     + {static} DESCRIPTION: string
+     --
+     + SquareLongModel(DESCRIPTION, OperationType,
+       OperandType)
+     --
+     + <<override>> applyUnary(Long): Long
+   }
+    SquareLongModel --|> UnaryLongModel
+    SquareLongModel -- OperandAnnotation
+
+    abstract class CommonLongModel <<Singleton>> {
+      - instance: CommonLongModel
+      --
+      - CommonLongModel()
+      --
+      + getInstance(): CommonLongModel
+      + convertOperandsToLong(String[], T[]): boolean
+    }
+
+    abstract class BinaryLongModel{
+      + BinaryLongModel(string, OperationType)
+      --
+      + convertOperandsToType(string[]): boolean
+    }
+    BinaryLongModel --|> BinaryModel
+    BinaryLongModel -- CommonLongModel
+
+    abstract class UnaryLongModel{
+      + UnaryLongModel(string, OperationType, OperandType)
+      --
+      + convertOperandsToType(string[]): boolean
+    }
+    UnaryLongModel --|> UnaryModel
+    UnaryLongModel -- CommonLongModel
+
+    class MulLongModel {
+      + {static} DESCRIPTION: string
+      --
+      + MulLongModel(DESCRIPTION, OperationType)
+      --
+      + <<override>> applyBinary(Long, Long): Long
+    }
+    MulLongModel --|> BinaryLongModel
+    MulLongModel -- OperandAnnotation
+
+    class SubLongModel {
+      + {static} DESCRIPTION: string
+      --
+      + SubLongModel(DESCRIPTION, OperationType, O
+        perandType)
+      --
+      + <<override>> applyBinary(Long, Long): Long
+    }
+    SubLongModel --|> BinaryLongModel
+  }
+
+  package extramodel {
+    class QuitModel<T> {
+      + {static} DESCRIPTION: string
+      --
+      + QuitModel()
+      --
+      + <<override>> apply(T[]): void
+      + <<override>> convertOperandsToType(T[]): boolean
+      + <<override>> execute(): void
+    }
+    QuitModel --|> Model
+  }
+}
+
+
+package view {
+
+  abstract class View {
+    - OPERANDS: string[]
+    --
+    + View(string, OperationType, OperandType)
+    --
+    + displayError(): void
+    + displayResult(result:string): void
+    + <<override>> execute(): void
+    + getDescription(): string
+    + getOperands(): string[]
+    + getShortcut(): string
+  }
+  View --|> CommonBase
+
+  abstract class CalcView{
+    # operationType: OperationType
+    --
+    + CalcView(description)
+    --
+    + <<override>> createElements(Package, OperandType): void
+    + displayElementsDescription(): void
+    + <<override>> execute(): void
+    + getOperationType(): OperationType
+  }
+  CalcView o-- "0..* -opViews" View
+  CalcView o-- "1 #opType" OperationType
+  CalcView --|> CalcCommonBase
+
+  package longview {
+    class AddLongView {
+      + {static} DESCRIPTION: string
+      --
+      + AddLongView()
+    }
+    AddLongView --|> View
+
+    class DivLongView {
+          + {static} DESCRIPTION: string
+          --
+          + DivLongView()
+        }
+        DivLongView --|> View
+
+    class MulLongView {
+      + {static} DESCRIPTION: string
+      --
+      + MulLongView()
+    }
+    MulLongView --|> View
+
+    class SquareLongView {
+          + {static} DESCRIPTION: string
+          --
+          + SquareLongView()
+        }
+        SquareLongView --|> View
+
+    class SubLongView {
+      + {static} DESCRIPTION: string
+      --
+      + SubLongView()
+    }
+    SubLongView --|> View
+
+    class CalcLongView {
+      # {static} DESCRIPTION: string
+      --
+      + CalcLongView()
+    }
+    CalcLongView --|> CalcView
+  }
+
+  package extraview {
+    class QuitView {
+      + {static} DESCRIPTION: string
+      --
+      + QuitView()
+      --
+      + <<override>> execute(): void
+    }
+    QuitView --|> View
+  }
+}
+
+
+package controller {
+  abstract class CalcController<T> {
+    # propertyChangeListener: PropertyChangeListener
+    - stop: boolean
+    --
+    + CalcController(string, CalcModel, CalcView)
+    --
+    + <<override>> createOpElements(Package, OperandType): void
+    + <<override>> execute(): void
+    + getCalcModel(): CalcModel<T>
+    + getCalcView(): CalcView
+    + getPropertyChangeListener(): PropertyChangeListener
+    # initControllerElements(): void
+  }
+  CalcController ..|> CalcCommonBase
+  CalcController .. "uses" OperationTypeException
+  CalcController *-- "#calcModel" CalcModel
+  CalcController *-- "#calcView" CalcView
+
+  abstract class Controller<T> {
+    # propertyChangeListener: PropertyChangeListener
+    --
+    + Controller(string, OperationType, OperandType)
+    --
+    + <<override>> execute(): void
+    + getModel(): Model
+    + getView(): View
+    + setModel(Model): void
+    + setView(View): void
+  }
+  Controller *-- "1 #model" Model
+  Controller *-- "1 #view" View
+  Controller --|> CommonBase
+
+
+  package longcontroller {
+    class AddLongController {
+      # {static} DESCRIPTION: string
+      --
+      + AddLongController()
+    }
+    AddLongController --|> Controller
+
+    class CalcLongController {
+      + {static} DESCRIPTION: string
+      --
+      - CalcLongController()
+      --
+      + {static} create(): CalcLongController
+    }
+    CalcLongController --|> CalcController
+
+    class DivLongController {
+      # {static} DESCRIPTION: string
+      --
+      + DivLongController()
+     }
+     DivLongController --|> Controller
+
+    class MulLongController {
+      # {static} DESCRIPTION: string
+      --
+      + MulLongController()
+    }
+    MulLongController --|> Controller
+
+    class SquareLongController {
+          # {static} DESCRIPTION: string
+          --
+          + SquareLongController()
+    }
+    SquareLongController --|> Controller
+
+    class SubLongController {
+      # {static} DESCRIPTION: string
+      --
+      + SubLongController()
+    }
+    SubLongController --|> Controller
+  }
+
+  package extracontroller {
+    class QuitController {
+      # {static} DESCRIPTION: string
+      --
+      + QuitController()
+      --
+      + <<override>> execute(): void
+    }
+    QuitController --|> Controller
+  }
+}
+
+
+
+package calcop {
+  abstract class Calc {
+    # CALC_OP_CONTROLLER: CalcController
+    # propertyChangeListener
+    --
+    + Calc(CalcController)
+  }
+  Calc ..-|> MyCommand
+  Calc --|> MyConcreteObservable
+
+  package calclongop {
+    class CalcLong {
+      + create(): CalcLong
+      --
+      - CalcLong()
+      --
+      +<<override>> execute(): void
+    }
+    CalcLong --|> Calc
+  }
+}
+
+
+
+@enduml
